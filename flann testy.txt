@@ -1,0 +1,84 @@
+TEST 1. 
+reading dataset - 95.2684s ; 100000 vectors dimension 4096
+reading query - 0.817047s ; 1000 vectors dimension 4096
+building autotuned index - 8772.78s ; AutotunedIndexParams(0.9,0.01,0,0.1))
+searching KNN - 31.8888s ; SearchParams(FLANN_CHECKS_AUTOTUNED) nn=2
+index save to - Autotuned_index_test1.idx
+
+TEST 2.
+reading dataset - 70.621s ; 100000 vectors dimension 4096
+reading query - 2.29013s ; 1000 vectors dimension 4096
+building KDTree index - 122.127s ; KDTreeIndexParams(4)
+searching KNN - 1.58309s ; SearchParams(128) nn=2
+
+TEST 3. index z textoveho suboru
+reading dataset - 145.111s ; 100000 vectors dimension 4096
+reading query - 1.28907s ; 1000 vectors dimension 4096
+building KDTree index - load "KDTreeIndex_test2.idx"
+searching KNN - 1.65909s ; SearchParams(128) nn=2
+
+TEST 4. index z textoveho suboru
+reading dataset - 68.9249s ; 100000 vectors dimension 4096
+reading query - 0.543031s ; 1000 vectors dimension 4096
+building KDTree index - load "KDTreeIndex_test2.idx"
+searching KNN - 1.60209s ; SearchParams(128) nn=10
+
+reading dataset - 86.779s ; 100000 vectors dimension 4096
+reading query - 0.553032s ; 1000 vectors dimension 4096
+building KDTree index - load "KDTreeIndex_test2.idx"
+searching KNN - 1.58609s ; SearchParams(128) nn=30
+
+reading dataset - 100.564s ; 100000 vectors dimension 4096
+reading query - 0.889051s ; 1000 vectors dimension 4096
+building KDTree index - load "KDTreeIndex_test2.idx"
+searching KNN - 1.8181s ; SearchParams(128) nn=50
+
+reading dataset - 95.2644s ; 100000 vectors dimension 4096
+reading query - 0.628s ; 1000 vectors dimension 4096
+building KDTree index - load "KDTreeIndex_test2.idx"
+searching KNN - 1.6821s ; SearchParams(128) nn=50 MAX Cores
+searching KNN - 1.64709s ; SearchParams(128) nn=50 MAX Cores
+
+reading dataset - 71.9331s ; 100000 vectors dimension 4096
+reading query - 0.633036s ; 1000 vectors dimension 4096
+building KDTree index - load "KDTreeIndex_test2.idx"
+searching KNN - 1.7611s ; SearchParams(128) nn=100 MAX Cores
+
+reading dataset - 59.2844s ; 100000 vectors dimension 4096
+reading query - 0.622036s ; 1000 vectors dimension 4096
+building KDTree index - load "KDTreeIndex_test2.idx"
+searching KNN - 12.9257s ; SearchParams(128) nn=1000 MAX Cores
+
+TEST 5.
+reading dataset - 60.9026s ; 100000 vectors dimension 4096
+reading query - 0.592034s ; 1000 vectors dimension 4096
+building autotuned index - load from file Autotuned_index_test1.idx
+searching KNN - 0.199011s ; SearchParams(FLANN_CHECKS_AUTOTUNED) nn=10
+
+searching KNN - 0.423024s ; SearchParams(FLANN_CHECKS_AUTOTUNED) nn=30
+searching KNN - 0.688039s ; SearchParams(FLANN_CHECKS_AUTOTUNED) nn=50
+searching KNN - 1.33408s ; SearchParams(FLANN_CHECKS_AUTOTUNED) nn=100
+searching KNN - 12.5087s ; SearchParams(FLANN_CHECKS_AUTOTUNED) nn=1000
+
+TEST 6.
+reading dataset - 67.1633s ; 100000 vectors dimension 4096
+reading query - 0.575033s ; 1000 vectors dimension 4096
+building autotuned index - 4792.2s ; AutotunedIndexParams(0.5,0.01,0,0.1))
+searching KNN - 2.8704s ; SearchParams(FLANN_CHECKS_AUTOTUNED) nn=100
+index save to - Autotuned_index_50per.idx
+
+TEST 7.
+reading dataset - 92.5474s ; 100000 vectors dimension 4096
+reading query - 0.776001s ; 1000 vectors dimension 4096
+building autotuned index - 6287.04s ; AutotunedIndexParams(0.8,0.01,0,0.1))
+searching KNN - 13.5397s ; SearchParams(FLANN_CHECKS_AUTOTUNED) nn=100
+index save to - Autotuned_index_80per.idx
+
+TEST 8.
+reading dataset - 75.8424s ; 100000 vectors dimension 4096
+reading query - 1.61123s ; 1000 vectors dimension 4096
+building autotuned index - 5652.73s ; AutotunedIndexParams(0.7,0.01,0,0.1))
+searching KNN - 7.34336s ; SearchParams(FLANN_CHECKS_AUTOTUNED) nn=100
+index save to - Autotuned_index_70per.idx
+
+

@@ -8,6 +8,7 @@ SOURCES += main.cpp
 
 
 
+
 HEADERS += \
     flann/general.h \
     flann/flann.hpp \
@@ -50,7 +51,8 @@ HEADERS += \
     flann/util/any.h \
     flann/util/allocator.h \
     flann/ext/lz4hc.h \
-    flann/ext/lz4.h
+    flann/ext/lz4.h \
+    flann/test/flann_tests.h
 
 
 win32:CONFIG(release, debug|release): LIBS += -L$$PWD/../FlannProject-build-Clone_of_Desktop-Debug/release/ -llibflann_cpp

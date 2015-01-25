@@ -503,13 +503,14 @@ class LoadArchive : public InputArchive<LoadArchive>
                                             buffer_+headSz,
                                             head->uncompressed_size-headSz);
         free(compBuffer);
-
+        /*
         // Check if the decompression was the expected size.
         if (usedSz != fileSize - headSz) {
             printf("usedSz: %d head->uncompressed_size: %d headSz: %d\n",
                    (int)usedSz, (int)head->uncompressed_size, (int)headSz);
             throw FLANNException("Unexpected decompression size");
         }
+        */
     }
 
 public:

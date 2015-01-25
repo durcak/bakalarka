@@ -1,9 +1,46 @@
 #include <iostream>
+#include <sstream>
+#include <fstream>
+#include <stdlib.h>
 #include <flann/flann.hpp>
+//#include <flann/test/flann_tests.h>
+//#include <flann/util/timer.h>
 //#include <flann/io/hdf5.h>
 
-//using namespace std;
 using namespace flann;
+/*
+clock_t start_time_;
+void start_timer(const std::string& message = "")
+{
+    if (!message.empty()) {
+        printf("%s", message.c_str());
+        fflush(stdout);
+    }
+    start_time_ = clock();
+}
+
+double stop_timer()
+{
+    return double(clock()-start_time_)/CLOCKS_PER_SEC;
+}
+*/
+timespec ts_;
+
+void start_timer(const std::string& message = "")
+{
+    if (!message.empty()) {
+        printf("%s", message.c_str());
+        fflush(stdout);
+    }
+    clock_gettime(CLOCK_REALTIME, &ts_);
+}
+
+double stop_timer()
+{
+    timespec ts2;
+    clock_gettime(CLOCK_REALTIME, &ts2);
+    return double((ts2.tv_sec-ts_.tv_sec)+(ts2.tv_nsec-ts_.tv_nsec)/1e9);
+}
 
 float* read_points(const char* filename, int rows, int cols)
 {
@@ -17,18 +54,18 @@ float* read_points(const char* filename, int rows, int cols)
         exit(1);
     }
 
-    data = (float*) malloc(rows*cols*sizeof(float));
+    unsigned long foo = rows*cols;
+    //__int64 foo2 = foo * sizeof(float);
 
+    data = new(std::nothrow)float[foo];
     //data = (float*) malloc(rows*cols*sizeof(float));
-    //data = (float*) malloc(16016000000);
-    //data = new(std::nothrow)float[rows*cols];
-    //data = new(std::nothrow)float[1023*1023*1023*1000];
 
-    if (!data) {
+    while (!data) {
         printf("Cannot allocate memory.\n");
-        exit(1);
+        data = new(std::nothrow)float[foo];
+        //exit(1);
     }
-    else
+    //else
         std::cout << "alokacia sa podarila.\n";
 
     //free(data);
@@ -37,12 +74,8 @@ float* read_points(const char* filename, int rows, int cols)
 
     for (int i = 0; i<rows; ++i)
     {
-        // if(i < 10) {
-        //     std::cout << i+1 << ". ";
-            char mystring [62];   //preskakuje nepotrebne riadky s id
-            fgets(mystring,60,fin);
-           // std::cout << mystring << std::endl;
-        // }
+        //char mystring [62];   //preskakuje nepotrebne riadky s id
+        //fgets(mystring,60,fin);
         for (int j = 0; j<cols; ++j)
         {
             fscanf(fin, "%g ", p);
@@ -53,6 +86,60 @@ float* read_points(const char* filename, int rows, int cols)
     return data;
 }
 
+float* read_points2(const char* filename, int rows, int cols)
+{
+        float* data = NULL;
+    std::ifstream is(filename);
+    if(is.is_open())
+        std::cout << "good" << std::endl;
+    //Create a vector to store the data
+    unsigned long foo = rows*cols;
+    __int64 foo2 = foo * sizeof(float);
+    //std::cout << foo2 << std::endl; //<< foo*sizeof(float) << std::endl;
+    data = new(std::nothrow)float[foo];
+
+    while (!data) {
+        printf("Cannot allocate memory.\n");
+        data = new(std::nothrow)float[foo];
+    }
+    //std::cout << "alokacia sa podarila.\n";
+
+    float *p = data;
+    //StartStopTimer t;
+    //t.start();
+
+    std::string line;
+    for (int j = 0; j<rows; ++j)
+    {
+        //t.reset();
+        //t.start();
+        is.seekg(60, std::ios::cur);
+        getline(is,line);
+
+        //std::cout << t.stop() << "s riadok nacitany" << std::endl;
+        //t.reset();
+        //t.start();
+
+        std::stringstream stream(line);
+        char* pEnd;
+        *p = strtof(line.c_str(), &pEnd);
+        p++;
+
+        for(int i = 1; i < cols; ++i)
+        {
+           *p = strtof(pEnd, &pEnd);
+           //stream >> *p;
+           //std::cout << *p << " pocet vektorov uz:" << j << std::endl;
+           //if(j == 0 && i == 5) std::cout << *p;
+           p++;
+        }
+        //std::cout << t.stop() << "s riadok rozparsovany" << std::endl;
+        //t.stop();
+    }
+
+    is.close();
+    return data;
+}
 
 void write_results(const char* filename, int *data, int rows, int cols)
 {
@@ -79,54 +166,74 @@ void write_results(const char* filename, int *data, int rows, int cols)
 
 int main()
 {
-    int nn = 2;
-    int rows = 10000;  // number of rows in dataset
-    int cols = 40000;  // dimension of vectors
+    int nn = 100;
+    int rows = 100000;  // number of rows in dataset
+    int cols = 4096;  // dimension of vectors
     int t_rows = 1000; // number of rows in query
 
+    //int rows = 100000;  // number of rows in dataset
+    //int cols = 3;  // dimension of vectors
+    //int t_rows = 100; // number of rows in query
 
-    float* dataset2 = read_points("../data/profi-neuralnet-100K.data", rows, cols);
-    std::cout << "Dataset nacitany" << std::endl;
-
-    float* query2 = read_points("../data/profi-neuralnet-1000-query.data", t_rows, cols);
-    std::cout << "Qeury nacitany" << std::endl;
-
+    start_timer("Reading dataset...");
     //float* dataset2 = read_points("../data/vector-L2-dim3-100000.data", rows, cols);
+    float* dataset2 = read_points2("../data/profi-neuralnet-100K.data", rows, cols);
+    printf("done (%g seconds)\n", stop_timer());
+
+
+    start_timer("Reading query...");
     //float* query2 = read_points("../data/queryset-dim32-100.data", t_rows, cols);
+    float* query2 = read_points2("../data/profi-neuralnet-1000-query.data", t_rows, cols);
+    printf("done (%g seconds)\n", stop_timer());
 
 
+    //Index<L2<float> > index2;
+    //index2.load_saved_index(dataset,"index100000.data",dists);
 
     Matrix<float> dataset(dataset2, rows, cols);
     Matrix<float> query(query2, t_rows, cols);
 
-    //load_from_file(dataset, "dataset.hdf5", "dataset");
-    //load_from_file(query, "dataset.hdf5", "query");
-
     Matrix<int> indices(new int[query.rows*nn], query.rows, nn);
     Matrix<float> dists(new float[query.rows*nn], query.rows, nn);
 
-    // construct an randomized kd-tree index using 4 kd-trees
-    Index<L2<float> > index(dataset, flann::KDTreeIndexParams(4));
-    index.buildIndex();
-    std::cout << "Index postaveny" << std::endl;
 
-    // do a knn search, using 128 checks
-    index.knnSearch(query, indices, dists, nn, flann::SearchParams(128));
+    // construct an randomized kd-tree index using 4 kd-trees
+    //Index<L2<float> > index(dataset, flann::KDTreeIndexParams(4));
+    Index<L2<float> > index(dataset, flann::AutotunedIndexParams(0.7,0.01,0,0.1));
+    //Index<L2<float> > index(dataset, flann::SavedIndexParams("Autotuned_index_test1.idx"));
+
+    start_timer("Building autotuned index...");
+    index.buildIndex();
+    printf("done (%g seconds)\n", stop_timer());
+
+    /*
+    const IndexParams index_params = index.getParameters();
+    printf("The index has the following parameters:\n");
+    flann::print_params(index_params);
+    */
+    flann::SearchParams searchParams(128);
+    searchParams.cores = 0;
+    //index.knnSearch(query, indices, dists, nn, searchParams);
+
+    start_timer("Searching KNN...");
+    index.knnSearch(query, indices, dists, nn, flann::SearchParams(FLANN_CHECKS_AUTOTUNED) );
+    //index.knnSearch(query, indices, dists, nn, flann::SearchParams(128) );
+    //index.knnSearch(query, indices, dists, nn, searchParams);
+    printf("done (%g seconds)\n", stop_timer());
 
     //flann::save_to_file(indices,"result.hdf5","result");
     write_results("results2.data",indices.ptr(), t_rows, nn);
     //write_results_float("ulozeneQuery.data",dists.ptr(), t_rows, nn);
 
-    index.save("index.dat");
+    index.save("Autotuned_index_70per.idx");
     //std::cout << *index.getPoint(0) << " " << *(index.getPoint(0)+1) << std::endl;
 
     free(dataset2);
     free(query2);
-    //delete[] dataset.ptr();
-    //delete[] query.ptr();
     delete[] indices.ptr();
     delete[] dists.ptr();
 
 }
+
 
 
