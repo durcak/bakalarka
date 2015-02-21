@@ -3,6 +3,7 @@
 #include <fstream>
 #include <stdlib.h>
 #include <flann/flann.hpp>
+#include <string>
 //#include <flann/test/flann_tests.h>
 //#include <flann/util/timer.h>
 //#include <flann/io/hdf5.h>
@@ -86,25 +87,34 @@ float* read_points(const char* filename, int rows, int cols)
     return data;
 }
 
-float* read_points2(const char* filename, int rows, int cols)
+float* read_points2(const char* filename, int rows, int cols, std::string * id)
 {
         float* data = NULL;
     std::ifstream is(filename);
     if(is.is_open())
-        std::cout << "good" << std::endl;
+        std::cout << "Subor je otvoreny." << std::endl;
+    else
+        exit(1);
+
     //Create a vector to store the data
     unsigned long foo = rows*cols;
     __int64 foo2 = foo * sizeof(float);
     //std::cout << foo2 << std::endl; //<< foo*sizeof(float) << std::endl;
     data = new(std::nothrow)float[foo];
 
+
+    int i=0;
     while (!data) {
+        i++;
         printf("Cannot allocate memory.\n");
         data = new(std::nothrow)float[foo];
+        if(i == 10)
+            exit(1);
     }
-    //std::cout << "alokacia sa podarila.\n";
+    std::cout << "alokacia sa podarila.\n";
 
     float *p = data;
+    //std::string *pomId = id;
     //StartStopTimer t;
     //t.start();
 
@@ -113,14 +123,22 @@ float* read_points2(const char* filename, int rows, int cols)
     {
         //t.reset();
         //t.start();
-        is.seekg(60, std::ios::cur);
+        is.seekg(49, std::ios::cur);
+
         getline(is,line);
+        //std::cout << line << " " << j << std::endl;
+        //*pomId = line;
+        id[j] = line;
+        //std::cout << id[j] << " " << j << std::endl;
+        //pomId++;
+        getline(is,line);
+
 
         //std::cout << t.stop() << "s riadok nacitany" << std::endl;
         //t.reset();
         //t.start();
 
-        std::stringstream stream(line);
+        //std::stringstream stream(line);
         char* pEnd;
         *p = strtof(line.c_str(), &pEnd);
         p++;
@@ -141,7 +159,30 @@ float* read_points2(const char* filename, int rows, int cols)
     return data;
 }
 
-void write_results(const char* filename, int *data, int rows, int cols)
+void write_results_float(const char* filename, float *data, int rows, int cols)
+{
+    FILE* fout;
+    float* p;
+    int i,j;
+
+    fout = fopen(filename,"w");
+    if (!fout) {
+        printf("Cannot open output file.\n");
+        exit(1);
+    }
+
+    p = data;
+    for (i=0;i<rows;++i) {
+        for (j=0;j<cols;++j) {
+            fprintf(fout,"%f ",*p);
+            p++;
+        }
+        fprintf(fout,"\n");
+    }
+    fclose(fout);
+}
+
+void write_results_int(const char* filename, int *data, int rows, int cols)
 {
     FILE* fout;
     int* p;
@@ -164,26 +205,62 @@ void write_results(const char* filename, int *data, int rows, int cols)
     fclose(fout);
 }
 
+void write_full_results(const char* filename, float *dists,int * indices, std::string *queryId,std::string *datasetId, int rows, int cols)
+{
+    FILE * fout;
+    float * p;
+    int * indic;
+    int i,j;
+
+    fout = fopen(filename,"w");
+    if (!fout) {
+        printf("Cannot open output file.\n");
+        exit(1);
+    }
+
+    p = dists;
+    indic = indices;
+
+    for (i=0;i<rows;++i) {
+        fprintf(fout,"query=%s\n",queryId[i].c_str());
+        for (j=0;j<cols-1;++j) {
+            fprintf(fout,"%f: ",*p);
+            fprintf(fout,"%s, ",datasetId[*indic].c_str());
+            p++;
+            indic++;
+        }
+        fprintf(fout,"%f: ",*p);
+        fprintf(fout,"%s\n",datasetId[*indic].c_str());
+        p++;
+        indic++;
+        //std::cout << i << std::endl;
+    }
+    fclose(fout);
+}
+
 int main()
 {
-    int nn = 100;
-    int rows = 100000;  // number of rows in dataset
+    int nn = 10;
+    int rows = 1000;  // number of rows in dataset
     int cols = 4096;  // dimension of vectors
-    int t_rows = 1000; // number of rows in query
+    int t_rows = 100; // number of rows in query
 
     //int rows = 100000;  // number of rows in dataset
     //int cols = 3;  // dimension of vectors
     //int t_rows = 100; // number of rows in query
 
-    start_timer("Reading dataset...");
+    std::string * query_id = new std::string[t_rows];
+    std::string * dataset_id = new std::string[rows];
+
+    start_timer("Reading dataset...");    
     //float* dataset2 = read_points("../data/vector-L2-dim3-100000.data", rows, cols);
-    float* dataset2 = read_points2("../data/profi-neuralnet-100K.data", rows, cols);
+    float* dataset2 = read_points2("../data/profi-neuralnet-100K.data", rows, cols, dataset_id);
     printf("done (%g seconds)\n", stop_timer());
 
 
     start_timer("Reading query...");
     //float* query2 = read_points("../data/queryset-dim32-100.data", t_rows, cols);
-    float* query2 = read_points2("../data/profi-neuralnet-1000-query.data", t_rows, cols);
+    float* query2 = read_points2("../data/profi-neuralnet-1000-query.data", t_rows, cols, query_id);
     printf("done (%g seconds)\n", stop_timer());
 
 
@@ -199,8 +276,8 @@ int main()
 
     // construct an randomized kd-tree index using 4 kd-trees
     //Index<L2<float> > index(dataset, flann::KDTreeIndexParams(4));
-    Index<L2<float> > index(dataset, flann::AutotunedIndexParams(0.7,0.01,0,0.1));
-    //Index<L2<float> > index(dataset, flann::SavedIndexParams("Autotuned_index_test1.idx"));
+    Index<L1<float> > index(dataset, flann::AutotunedIndexParams(0.9,0.01,0,0.1));
+    //Index<L2<float> > index(dataset, flann::SavedIndexParams("Autotuned_index_90per.idx"));
 
     start_timer("Building autotuned index...");
     index.buildIndex();
@@ -222,14 +299,22 @@ int main()
     printf("done (%g seconds)\n", stop_timer());
 
     //flann::save_to_file(indices,"result.hdf5","result");
-    write_results("results2.data",indices.ptr(), t_rows, nn);
+    std::cout << "zapisujem vzdialenost";
+    write_results_float("test distance.data",dists.ptr(), t_rows, nn);
+    write_results_int("test indices.data",indices.ptr(), t_rows, nn);
+    std::cout << "... done" << std::endl;
+    write_full_results("groundtruth-profineural3.txt",dists.ptr(),indices.ptr(),query_id,dataset_id,t_rows,nn);
     //write_results_float("ulozeneQuery.data",dists.ptr(), t_rows, nn);
 
-    index.save("Autotuned_index_70per.idx");
-    //std::cout << *index.getPoint(0) << " " << *(index.getPoint(0)+1) << std::endl;
+    //index.save("Autotuned_index_10per.idx");
+    //std::cout << dataset_id[903] << dataset_id[791] << std::endl;
+    //std::cout << dataset_id[884] << dataset_id[288] << std::endl;
 
-    free(dataset2);
-    free(query2);
+    //std::cout << *index.getPoint(903) << " " << *index.getPoint(791) << " " << *index.getPoint(30) << std::endl;
+    //std::cout << *index.getPoint(573) << " " << *(index.getPoint(1)+1) << " " << *(index.getPoint(1)+2) << std::endl;
+
+    delete[] dataset2;
+    delete[] query2;
     delete[] indices.ptr();
     delete[] dists.ptr();
 
